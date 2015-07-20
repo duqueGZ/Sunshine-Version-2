@@ -3,10 +3,5 @@
 
     <string name="app_name">Sunshine</string>
     <string name="action_settings">Settings</string>
-    <string name="date_field">DATE</string>
-    <string name="max_temp_field">MAX TEMP</string>
-    <string name="min_temp_field">MIN TEMP</string>
-    <string name="forecast_label_field">FORECAST</string>
-    <string name="weather_icon_desc">Weather Forecast Icon</string>
 
 </resources>

@@ -1,30 +1,22 @@
 package com.example.android.sunshine.app;
 
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.support.v7.app.ActionBarActivity;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 
 public class MainActivity extends ActionBarActivity {
-
-    private static final String TODAY_LABEL = "Today";
-    private static final String CLOUDY_LABEL = "cloudy";
-    private static final String SDF_PATTERN = "MMMM dd";
-    private static final int WEATHER_ICON_WIDTH = 184;
-    private static final int WEATHER_ICON_HEIGHT = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,28 +64,21 @@ public class MainActivity extends ActionBarActivity {
                                  Bundle savedInstanceState) {
             View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-            //Set forecast date to a selected date. For example, today
-            TextView dateField = (TextView) rootView.findViewById(R.id.dateField);
-            SimpleDateFormat sdf = new SimpleDateFormat(MainActivity.SDF_PATTERN, new Locale("en"));
-            Date today = new Date();
-            String dateValue = MainActivity.TODAY_LABEL + ", " + sdf.format(today);
-            dateField.setText(dateValue);
+            String [] data = {
+                    "Today - Sunny - 88/63",
+                    "Tomorrow - Foggy - 70/46",
+                    "Weds - Cloudy - 72/63",
+                    "Thurs - Rainy - 64/51",
+                    "Fri - Foggy - 70/46",
+                    "Sat - Sunny - 76/68"
+            };
+            List<String> forecasts = new ArrayList<String>(Arrays.asList(data));
 
-            //Set forecast maximum and minimum temperature values to the corresponding value
-            TextView maxTempField = (TextView) rootView.findViewById(R.id.maxTempField);
-            maxTempField.setText("25º");
-            TextView minTempField = (TextView) rootView.findViewById(R.id.minTempField);
-            minTempField.setText("10º");
+            ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this.getActivity(),
+                    R.layout.list_item_forecast, R.id.list_item_forecast_textview, forecasts);
 
-            //Set forecast icon and label to the corresponding image and name
-            //ImageView weatherIcon = (ImageView) rootView.findViewById(R.id.weatherIcon);
-            //weatherIcon.setImageDrawable(this.getResources().getDrawable(R.drawable.cloudy_icon));
-            TextView weatherLabel = (TextView) rootView.findViewById(R.id.weatherLabel);
-            weatherLabel.setText(MainActivity.CLOUDY_LABEL);
-            Drawable cloudyDrawable = this.getResources().getDrawable(R.drawable.cloudy_icon);
-            Bitmap cloudyBitmap = ((BitmapDrawable) cloudyDrawable).getBitmap();
-            Drawable weatherIcon = new BitmapDrawable(this.getResources(), Bitmap.createScaledBitmap(cloudyBitmap, MainActivity.WEATHER_ICON_WIDTH, MainActivity.WEATHER_ICON_HEIGHT, true));
-            weatherLabel.setCompoundDrawablesWithIntrinsicBounds(null, weatherIcon, null, null);
+            ListView forecastListView = (ListView)rootView.findViewById(R.id.listview_forecast);
+            forecastListView.setAdapter(arrayAdapter);
 
             return rootView;
         }
