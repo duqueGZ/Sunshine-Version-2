@@ -1,8 +1,11 @@
 package com.example.android.sunshine.app;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.text.format.Time;
 import android.util.Log;
@@ -12,6 +15,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -28,8 +32,6 @@ import java.net.URL;
 import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by davidduque on 7/23/15.
@@ -54,21 +56,22 @@ public class ForecastFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        String [] data = {
-                "Today - Sunny - 88/63",
-                "Tomorrow - Foggy - 70/46",
-                "Weds - Cloudy - 72/63",
-                "Thurs - Rainy - 64/51",
-                "Fri - Foggy - 70/46",
-                "Sat - Sunny - 76/68"
-        };
-        List<String> forecasts = new ArrayList<String>(Arrays.asList(data));
-
         this.mForecastAdapter = new ArrayAdapter<String>(this.getActivity(),
-                R.layout.list_item_forecast, R.id.list_item_forecast_textview, forecasts);
+                R.layout.list_item_forecast, R.id.list_item_forecast_textview,
+                new ArrayList<String>());
 
         ListView forecastListView = (ListView)rootView.findViewById(R.id.listview_forecast);
         forecastListView.setAdapter(this.mForecastAdapter);
+
+        forecastListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+
+                Intent detailActivityIntent = new Intent(ForecastFragment.this.getActivity(), DetailActivity.class);
+                detailActivityIntent.putExtra(Intent.EXTRA_TEXT, ForecastFragment.this.mForecastAdapter.getItem(i));
+                ForecastFragment.this.startActivity(detailActivityIntent);
+            }
+        });
 
         return rootView;
     }
@@ -87,11 +90,28 @@ public class ForecastFragment extends Fragment {
         int id = item.getItemId();
 
         if (id == R.id.action_refresh) {
-            String postalCode = "15679,ES";
-            new FetchWeatherTask().execute(postalCode);
+            this.updateWeatherForecast();
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onStart() {
+
+        super.onStart();
+        this.updateWeatherForecast();
+    }
+
+    private void updateWeatherForecast() {
+
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this.getActivity());
+        String location = preferences.getString(this.getString(R.string.pref_location_key),
+                this.getString(R.string.pref_location_default));
+        String units = preferences.getString(this.getString(R.string.pref_temperature_key),
+                this.getString(R.string.pref_units_metric));
+        new FetchWeatherTask().execute(location, units);
     }
 
     public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
@@ -102,7 +122,6 @@ public class ForecastFragment extends Fragment {
         private final String FORMAT_PARAM = "mode";
         private final String UNITS_PARAM = "units";
         private final String DAYS_COUNT_PARAM = "cnt";
-
 
         @Override
         protected String[] doInBackground(String... params) {
@@ -116,21 +135,24 @@ public class ForecastFragment extends Fragment {
             String forecastJsonStr = null;
 
             String format = "json";
-            String units = "metric";
+            String queryUnits = getString(R.string.pref_units_metric);
             int daysCount = 7;
 
             try {
                 // Construct the URL for the OpenWeatherMap query from the task parameter
                 // Possible parameters are available at OWM's forecast API page, at
                 // http://openweathermap.org/API#forecast
-                if (params.length!=1) {
-                    throw new InvalidParameterException("ERROR. Not valid parameter passed to FetchWeatherTask");
+                if (params.length!=2) {
+                    throw new InvalidParameterException("ERROR. Not valid parameter (location " +
+                            "+ units) passed to FetchWeatherTask");
                 }
-                String postalCode = params[0];
+                String location = params[0];
+                String units = params[1];
+
                 Uri.Builder uriBuilder = Uri.parse(this.FORECAST_BASE_URL).buildUpon();
-                uriBuilder.appendQueryParameter(this.QUERY_PARAM, postalCode)
+                uriBuilder.appendQueryParameter(this.QUERY_PARAM, location)
                         .appendQueryParameter(this.FORMAT_PARAM, format)
-                        .appendQueryParameter(this.UNITS_PARAM, units)
+                        .appendQueryParameter(this.UNITS_PARAM, queryUnits)
                         .appendQueryParameter(this.DAYS_COUNT_PARAM, Integer.valueOf(daysCount).toString());
                 URL url = new URL(uriBuilder.build().toString());
 
@@ -162,7 +184,7 @@ public class ForecastFragment extends Fragment {
                 }
                 forecastJsonStr = buffer.toString();
 
-                return this.getWeatherDataFromJson(forecastJsonStr, daysCount);
+                return this.getWeatherDataFromJson(forecastJsonStr, daysCount, units);
             } catch (IOException e) {
                 Log.e(this.LOG_TAG, "Error ", e);
                 // If the code didn't successfully get the weather data, there's no point in attempting
@@ -209,13 +231,25 @@ public class ForecastFragment extends Fragment {
         /**
          * Prepare the weather high/lows for presentation.
          */
-        private String formatHighLows(double high, double low) {
+        private String formatHighLows(double high, double low, String units) {
+
+            if (units.equals(getString(R.string.pref_units_imperial))) {
+                high = this.celsiusToFarenheit(high);
+                low = this.celsiusToFarenheit(low);
+            } else if (!units.equals(getString(R.string.pref_units_metric))) {
+                Log.e(LOG_TAG, "Unit type not found: " + units);
+            }
             // For presentation, assume the user doesn't care about tenths of a degree.
             long roundedHigh = Math.round(high);
             long roundedLow = Math.round(low);
 
             String highLowStr = roundedHigh + "/" + roundedLow;
             return highLowStr;
+        }
+
+        private double celsiusToFarenheit(double value) {
+
+            return ((9.0*value/5.0)+32.0);
         }
 
         /**
@@ -225,7 +259,7 @@ public class ForecastFragment extends Fragment {
          * Fortunately parsing is easy:  constructor takes the JSON string and converts it
          * into an Object hierarchy for us.
          */
-        private String[] getWeatherDataFromJson(String forecastJsonStr, int numDays)
+        private String[] getWeatherDataFromJson(String forecastJsonStr, int numDays, String units)
                 throws JSONException {
 
             // These are the names of the JSON objects that need to be extracted.
@@ -284,7 +318,7 @@ public class ForecastFragment extends Fragment {
                 double high = temperatureObject.getDouble(OWM_MAX);
                 double low = temperatureObject.getDouble(OWM_MIN);
 
-                highAndLow = formatHighLows(high, low);
+                highAndLow = formatHighLows(high, low, units);
                 resultStrs[i] = day + " - " + description + " - " + highAndLow;
             }
 

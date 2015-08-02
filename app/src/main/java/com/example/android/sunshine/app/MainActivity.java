@@ -1,12 +1,20 @@
 package com.example.android.sunshine.app;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Toast;
 
 
 public class MainActivity extends ActionBarActivity {
+
+    private static final String LOG_TAG = MainActivity.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,9 +43,42 @@ public class MainActivity extends ActionBarActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent settingsActivityIntent = new Intent(this, SettingsActivity.class);
+            this.startActivity(settingsActivityIntent);
+            return true;
+        } else if (id == R.id.action_view_location) {
+            showPreferredLocationOnMap();
             return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void showPreferredLocationOnMap() {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String userLocation = preferences.getString(this.getString(R.string.pref_location_key),
+                null);
+        if (userLocation==null) {
+            Toast.makeText(this, "Preferred location cannot been retrieved", Toast.LENGTH_SHORT)
+                    .show();
+            Log.e(LOG_TAG, "Couldn't retrieve " + this.getString(R.string.pref_location_key)
+                    + " preference value");
+            return;
+        }
+        // Using the URI scheme for showing a location found on a map.  This super-handy
+        // intent can is detailed in the "Common Intents" page of Android's developer site:
+        // http://developer.android.com/guide/components/intents-common.html#Maps
+        Uri geoLocation = Uri.parse("geo:0,0?").buildUpon()
+                .appendQueryParameter("q", userLocation)
+                .build();
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(geoLocation);
+        if (intent.resolveActivity(getPackageManager()) == null) {
+            Toast.makeText(this, "An app able to show the location in a map cannot been retrieved",
+                    Toast.LENGTH_SHORT).show();
+            Log.e(LOG_TAG, "Couldn't call " + userLocation + ", no receiving apps installed!");
+            return;
+        }
+        startActivity(intent);
     }
 }
