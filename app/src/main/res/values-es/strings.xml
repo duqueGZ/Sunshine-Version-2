@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <!-- Strings for accesibility -->
+    <string name="wind">Viento</string>
+    <string name="windDirectionN">desde el Norte</string>
+    <string name="windDirectionNE">desde el Noreste</string>
+    <string name="windDirectionS">desde el Sur</string>
+    <string name="windDirectionSE">desde el Sureste</string>
+    <string name="windDirectionNW">desde el Noroeste</string>
+    <string name="windDirectionSW">desde el Suroeste</string>
+    <string name="windDirectionW">desde el Oeste</string>
+    <string name="windDirectionE">desde el Este</string>
+    <string name="format_wind_mph_accesibility">
+        <xliff:g id="speed">%1$1.0f</xliff:g> millas por hora
+    </string>
+    <string name="format_wind_kmh_accesibility">
+        <xliff:g id="speed">%1$1.0f</xliff:g> kilómetros por hora
+    </string>
+    <string name="wind_orientation">Viento con una orientación de</string>
+    <string name="degrees">grados</string>
+</resources>
