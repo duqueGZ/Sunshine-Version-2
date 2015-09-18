@@ -15,6 +15,7 @@
  */
 package com.example.android.sunshine.app;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -22,6 +23,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -32,12 +34,14 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.example.android.sunshine.app.data.WeatherContract;
+import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
 
 /**
  * Encapsulates fetching the forecast and displaying it as a {@link ListView} layout.
  */
 public class ForecastFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
+    private final String LOG_TAG = ForecastFragment.class.getSimpleName();
     private static final String SELECTED_POSITION_KEY = "selected_position";
     private static final int FORECAST_LOADER_ID = 0;
     private static final String[] FORECAST_COLUMNS = {
@@ -74,6 +78,8 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     private ListView mForecastListView;
     private int mSelectedPosition = ListView.INVALID_POSITION;
     private boolean mUseTodaySpecialLayout;
+    private double mLatitude;
+    private double mLongitude;
 
     public ForecastFragment() {
     }
@@ -102,10 +108,17 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        if (id == R.id.action_refresh) {
-            updateWeather();
+
+//        if (id == R.id.action_refresh) {
+//            updateWeather();
+//            return true;
+//        }
+
+        if (id == R.id.action_map) {
+            openLocationInMap();
             return true;
         }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -158,9 +171,44 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
     }
 
     private void updateWeather() {
-        FetchWeatherTask weatherTask = new FetchWeatherTask(getActivity());
-        String location = Utility.getPreferredLocation(getActivity());
-        weatherTask.execute(location);
+        /*String location = Utility.getPreferredLocation(getActivity());
+
+        Intent intent = new Intent(getActivity(), SunshineService.AlarmReceiver.class)
+                .putExtra(SunshineService.LOCATION_PARAM, location);
+
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(getActivity(), 0,
+                intent, PendingIntent.FLAG_ONE_SHOT);
+
+        ((AlarmManager)getActivity()
+                .getSystemService(Context.ALARM_SERVICE)).set(AlarmManager.RTC_WAKEUP,
+                System.currentTimeMillis() + 5 * 1000, pendingIntent);*/
+        SunshineSyncAdapter.syncImmediately(getActivity());
+    }
+
+    private void openLocationInMap() {
+
+        // Using the URI scheme for showing a location found on a map.  This super-handy
+        // intent can is detailed in the "Common Intents" page of Android's developer site:
+        // http://developer.android.com/guide/components/intents-common.html#Maps
+        if ( null != mForecastAdapter ) {
+            Cursor c = mForecastAdapter.getCursor();
+            if ( null != c ) {
+                c.moveToPosition(0);
+                String posLat = c.getString(COL_COORD_LAT);
+                String posLong = c.getString(COL_COORD_LONG);
+                Uri geoLocation = Uri.parse("geo:" + posLat + "," + posLong);
+
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(geoLocation);
+
+                if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
+                    startActivity(intent);
+                } else {
+                    Log.d(LOG_TAG, "Couldn't call " + geoLocation.toString() + ", no receiving apps installed!");
+                }
+            }
+
+        }
     }
 
     //Loader Callbacks
@@ -181,6 +229,10 @@ public class ForecastFragment extends Fragment implements LoaderManager.LoaderCa
         mForecastAdapter.swapCursor(cursor);
         if (mSelectedPosition!=ListView.INVALID_POSITION) {
             mForecastListView.smoothScrollToPosition(mSelectedPosition);
+        }
+        if (cursor.moveToFirst()) {
+            mLatitude = cursor.getDouble(COL_COORD_LAT);
+            mLongitude = cursor.getDouble(COL_COORD_LONG);
         }
     }
 
