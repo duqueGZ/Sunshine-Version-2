@@ -8,6 +8,9 @@
     -->
     <string name="app_name">Sunshine</string>
 
+    <!-- API string -->
+    <string name="owm_api_key" translatable="false">***REMOVED***</string>
+
     <!--
          By convention, "action" denotes that this String will be used as the label for an Action,
          typically from the action bar.  The ActionBar is limited real estate, so shorter is better.
@@ -78,6 +81,8 @@
     <!-- Date label when displaying tomorrow's weather forecast [CHAR LIMIT=20] -->
     <string name="tomorrow">Tomorrow</string>
 
+    <string name="month_day_format">dd MMMM"</string>
+
     <!-- Date format [CHAR LIMIT=NONE] -->
     <string name="format_full_friendly_date">
         <xliff:g id="month">%1$s</xliff:g>, <xliff:g id="day">%2$s</xliff:g>
@@ -121,6 +126,12 @@
     </string>
     <string name="wind_orientation">Wind with an orientation of</string>
     <string name="degrees">degrees</string>
+
+    <!-- A11y -->
+    <string name="a11y_forecast">Forecast: <xliff:g id="condition">%1$s</xliff:g></string>
+    <string name="a11y_forecast_icon">Forecast icon: <xliff:g id="condition">%1$s</xliff:g></string>
+    <string name="a11y_high_temp">High: <xliff:g id="high">%1$s</xliff:g></string>
+    <string name="a11y_low_temp">Low: <xliff:g id="low">%1$s</xliff:g></string>
 
     <!-- SyncAdapter related -->
     <string name="sync_account_type" translatable="false">sunshine.example.com</string>

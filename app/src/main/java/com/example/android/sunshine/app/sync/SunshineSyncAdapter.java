@@ -116,15 +116,19 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
             final String FORMAT_PARAM = "mode";
             final String UNITS_PARAM = "units";
             final String DAYS_PARAM = "cnt";
+            final String APIKEY_PARAM = "APPID";
 
             Uri builtUri = Uri.parse(FORECAST_BASE_URL).buildUpon()
                     .appendQueryParameter(QUERY_PARAM, locationQuery)
                     .appendQueryParameter(FORMAT_PARAM, format)
                     .appendQueryParameter(UNITS_PARAM, units)
                     .appendQueryParameter(DAYS_PARAM, Integer.toString(numDays))
+                    .appendQueryParameter(APIKEY_PARAM, getContext().getString(R.string.owm_api_key))
                     .build();
 
             URL url = new URL(builtUri.toString());
+
+            Log.d(LOG_TAG, "Calling to OWM API: " + url.toString());
 
             // Create the request to OpenWeatherMap, and open the connection
             urlConnection = (HttpURLConnection) url.openConnection();
@@ -149,6 +153,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
             }
 
             if (buffer.length() == 0) {
+                Log.e(LOG_TAG, "Empty answer obtained");
                 // Stream was empty.  No point in parsing.
                 Utility.setLocationStatus(getContext(),
                         LOCATION_STATUS_SERVER_DOWN);
@@ -323,11 +328,14 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
                 switch (errorCode) {
                     case HttpURLConnection.HTTP_OK:
+                        Log.e(LOG_TAG, "OK answer obtained");
                         break;
                     case HttpURLConnection.HTTP_NOT_FOUND:
+                        Log.e(LOG_TAG, "404 answer obtained");
                         Utility.setLocationStatus(getContext(), LOCATION_STATUS_INVALID);
                         return;
                     default:
+                        Log.e(LOG_TAG, "Undetermined answer obtained");
                         Utility.setLocationStatus(getContext(), LOCATION_STATUS_SERVER_DOWN);
                         return;
                 }

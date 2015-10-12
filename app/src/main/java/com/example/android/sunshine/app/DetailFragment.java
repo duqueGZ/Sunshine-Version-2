@@ -192,9 +192,11 @@ public class DetailFragment extends Fragment
         String high = Utility.formatTemperature(getActivity(),
                 data.getDouble(COL_WEATHER_MAX_TEMP), isMetric);
         mHighTempView.setText(high);
+        mHighTempView.setContentDescription(getString(R.string.a11y_high_temp, high));
         String low = Utility.formatTemperature(getActivity(),
                 data.getDouble(COL_WEATHER_MIN_TEMP), isMetric);
         mLowTempView.setText(low);
+        mLowTempView.setContentDescription(getString(R.string.a11y_low_temp, low));
 
         //Forecast icon and description
         // Read weather condition ID from cursor
@@ -204,10 +206,13 @@ public class DetailFragment extends Fragment
         String weatherDescription =
                 data.getString(COL_WEATHER_DESC);
         mDescriptionView.setText(weatherDescription);
+        mDescriptionView
+                .setContentDescription(getString(R.string.a11y_forecast, weatherDescription));
 
         //Humidity data
         Float humidity = data.getFloat(COL_WEATHER_HUMIDITY);
         mHumidityView.setText(getActivity().getString(R.string.format_humidity, humidity));
+        mHumidityView.setContentDescription(mHumidityView.getText());
 
         //Wind data
         Float windSpeed = data.getFloat(COL_WEATHER_WIND_SPEED);
@@ -232,6 +237,7 @@ public class DetailFragment extends Fragment
         //Pressure data
         Float pressure = data.getFloat(COL_WEATHER_PRESSURE);
         mPressureView.setText(getActivity().getString(R.string.format_pressure, pressure));
+        mPressureView.setContentDescription(mPressureView.getText());
 
         mForecast = String.format("%s - %s - %s/%s", dateString, weatherDescription, high, low);
         // If onCreateOptionsMenu has already happened, we need to update the share intent now.

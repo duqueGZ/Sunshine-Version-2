@@ -19,4 +19,23 @@
     </string>
     <string name="wind_orientation">Viento con una orientación de</string>
     <string name="degrees">grados</string>
+
+    <!-- A11y -->
+    <string name="a11y_forecast">Pronóstico: <xliff:g id="condition">%1$s</xliff:g></string>
+    <string name="a11y_high_temp">Máxima: <xliff:g id="high">%1$s</xliff:g></string>
+    <string name="a11y_low_temp">Mínima: <xliff:g id="low">%1$s</xliff:g></string>
+
+    <!-- Pressure format CHAR LIMIT=25] -->
+    <string name="format_pressure">Presión: <xliff:g id="pressure">%1.0f</xliff:g> hPa</string>
+
+    <!-- Humidity format CHAR LIMIT=25]-->
+    <string name="format_humidity">Humedad: <xliff:g id="humidity">%1.0f</xliff:g> %%</string>
+
+    <!-- Date label when displaying today's weather forecast [CHAR LIMIT=20] -->
+    <string name="today">Hoy</string>
+
+    <!-- Date label when displaying tomorrow's weather forecast [CHAR LIMIT=20] -->
+    <string name="tomorrow">Mañana</string>
+
+    <string name="month_day_format">dd MMMM"</string>
 </resources>
