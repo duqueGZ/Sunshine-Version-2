@@ -37,6 +37,7 @@ import android.view.accessibility.AccessibilityManager;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.views.MyView;
 
@@ -201,8 +202,12 @@ public class DetailFragment extends Fragment
         //Forecast icon and description
         // Read weather condition ID from cursor
         int weatherId = data.getInt(COL_WEATHER_CONDITION_ID);
-        //Placeholder icon by now
-        mIconView.setImageResource(Utility.getArtResourceForWeatherCondition(weatherId));
+        // Use weather art image
+        Glide.with(this)
+                .load(Utility.getArtUrlForWeatherCondition(getActivity(), weatherId))
+                .error(Utility.getArtResourceForWeatherCondition(weatherId))
+                .crossFade()
+                .into(mIconView);
         String weatherDescription =
                 data.getString(COL_WEATHER_DESC);
         mDescriptionView.setText(weatherDescription);
