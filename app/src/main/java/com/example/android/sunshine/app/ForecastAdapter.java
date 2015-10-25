@@ -2,7 +2,9 @@ package com.example.android.sunshine.app;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.support.v4.widget.CursorAdapter;
+import android.os.Bundle;
+import android.support.v4.view.ViewCompat;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,21 +12,33 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.example.android.sunshine.app.data.WeatherContract;
 
 /**
  * {@link ForecastAdapter} exposes a list of weather forecasts
- * from a {@link android.database.Cursor} to a {@link android.widget.ListView}.
+ * from a {@link android.database.Cursor} to a {@link android.support.v7.widget.RecyclerView}
  */
-public class ForecastAdapter extends CursorAdapter {
+public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.ForecastAdapterViewHolder> {
 
     private static final int VIEW_TYPE_TODAY = 0;
     private static final int VIEW_TYPE_FUTURE_DAY = 1;
-    private static final int VIEW_TYPE_COUNT = 2;
 
-    private boolean mUseTodaySpecialLayout;
+    private boolean mUseTodaySpecialLayout = Boolean.TRUE;
 
-    public ForecastAdapter(Context context, Cursor c, int flags) {
-        super(context, c, flags);
+    private Cursor mCursor;
+    final private Context mContext;
+    final private ForecastAdapterOnClickHandler mClickHandler;
+    final private View mEmptyView;
+    final private ItemChoiceManager mICM;
+
+    public ForecastAdapter(Context context, ForecastAdapterOnClickHandler onClickHandler, View emptyView,
+                           int choiceMode) {
+
+        mContext = context;
+        mClickHandler = onClickHandler;
+        mEmptyView = emptyView;
+        mICM = new ItemChoiceManager(this);
+        mICM.setChoiceMode(choiceMode);
     }
 
     public void setUseTodaySpecialLayout(boolean useTodaySpecialLayout) {
@@ -38,46 +52,63 @@ public class ForecastAdapter extends CursorAdapter {
 
 
     @Override
-    public int getViewTypeCount() {
-        return VIEW_TYPE_COUNT;
+    public int getItemCount() {
+        if ( null == mCursor ) return 0;
+        return mCursor.getCount();
     }
 
+
+    public void swapCursor(Cursor newCursor) {
+        mCursor = newCursor;
+        notifyDataSetChanged();
+        mEmptyView.setVisibility(getItemCount() == 0 ? View.VISIBLE : View.GONE);
+    }
+
+
+    public Cursor getCursor() {
+        return mCursor;
+    }
+
+
     /*
-        Remember that these views are reused as needed.
+        This takes advantage of the fact that the viewGroup passed to onCreateViewHolder is the
+        RecyclerView that will be used to contain the view, so that it can get the current
+        ItemSelectionManager from the view.
+
+        One could implement this pattern without modifying RecyclerView by taking advantage
+        of the view tag to store the ItemChoiceManager.
      */
     @Override
-    public View newView(Context context, Cursor cursor, ViewGroup parent) {
-        // Choose the layout type
-        int viewType = getItemViewType(cursor.getPosition());
-        int layoutId = -1;
-        //Determine layoutId from viewType
-        switch (viewType) {
-            case VIEW_TYPE_TODAY:
-                layoutId = R.layout.list_item_forecast_today;
-                break;
-            case VIEW_TYPE_FUTURE_DAY:
-                layoutId = R.layout.list_item_forecast;
-                break;
+    public ForecastAdapterViewHolder onCreateViewHolder(ViewGroup viewGroup, int viewType) {
+        if ( viewGroup instanceof RecyclerView ) {
+            int layoutId = -1;
+            switch (viewType) {
+                case VIEW_TYPE_TODAY: {
+                    layoutId = R.layout.list_item_forecast_today;
+                    break;
+                }
+                case VIEW_TYPE_FUTURE_DAY: {
+                    layoutId = R.layout.list_item_forecast;
+                    break;
+                }
+            }
+            View view = LayoutInflater.from(viewGroup.getContext()).inflate(layoutId, viewGroup, false);
+            view.setFocusable(true);
+            return new ForecastAdapterViewHolder(view);
+        } else {
+            throw new RuntimeException("Not bound to RecyclerView");
         }
-        View view = LayoutInflater.from(context).inflate(layoutId, parent, false);
-        ViewHolder viewHolder = new ViewHolder(view);
-        view.setTag(viewHolder);
-
-        return view;
     }
 
-    /*
-        This is where we fill-in the views with the contents of the cursor.
-     */
     @Override
-    public void bindView(View view, Context context, Cursor cursor) {
-        ViewHolder viewHolder = (ViewHolder) view.getTag();
+    public void onBindViewHolder(ForecastAdapterViewHolder forecastAdapterViewHolder, int position) {
+        mCursor.moveToPosition(position);
 
         // Icon from weather condition
         // Read weather condition ID from cursor
-        int weatherId = cursor.getInt(ForecastFragment.COL_WEATHER_CONDITION_ID);
+        int weatherId = mCursor.getInt(ForecastFragment.COL_WEATHER_CONDITION_ID);
         // Choose the layout type
-        int viewType = getItemViewType(cursor.getPosition());
+        int viewType = getItemViewType(position);
         int iconResourceId = -1;
         //Determine iconResourceId from viewType
         switch (viewType) {
@@ -88,56 +119,103 @@ public class ForecastAdapter extends CursorAdapter {
                 iconResourceId = Utility.getIconResourceForWeatherCondition(weatherId);
                 break;
         }
-        Glide.with(mContext)
-                .load(Utility.getArtUrlForWeatherCondition(mContext, weatherId))
-                .error(iconResourceId)
-                .crossFade()
-                .into(viewHolder.iconView);
+
+        if (Utility.usingLocalGraphics(mContext)) {
+            forecastAdapterViewHolder.mIconView.setImageResource(iconResourceId);
+        } else {
+            Glide.with(mContext)
+                    .load(Utility.getArtUrlForWeatherCondition(mContext, weatherId))
+                    .error(iconResourceId)
+                    .crossFade()
+                    .into(forecastAdapterViewHolder.mIconView);
+        }
+
+        // this enables better animations. even if we lose state due to a device rotation,
+        // the animator can use this to re-find the original view
+        ViewCompat.setTransitionName(forecastAdapterViewHolder.mIconView, "iconView" + position);
 
         // Read date from cursor
-        long dateInMilliseconds = cursor.getLong(ForecastFragment.COL_WEATHER_DATE);
-        viewHolder.dateView.setText(Utility.getFriendlyDayString(context, dateInMilliseconds));
+        long dateInMilliseconds = mCursor.getLong(ForecastFragment.COL_WEATHER_DATE);
+        forecastAdapterViewHolder.mDateView.setText(Utility.getFriendlyDayString(mContext, dateInMilliseconds));
 
         // Read weather forecast from cursor
-        String forecastDesc = cursor.getString(ForecastFragment.COL_WEATHER_DESC);
-        viewHolder.descriptionView.setText(forecastDesc);
-        viewHolder.descriptionView
-                .setContentDescription(context.getString(R.string.a11y_forecast, forecastDesc));
+        String forecastDesc = mCursor.getString(ForecastFragment.COL_WEATHER_DESC);
+        forecastAdapterViewHolder.mDescriptionView.setText(forecastDesc);
+        forecastAdapterViewHolder.mDescriptionView
+                .setContentDescription(mContext.getString(R.string.a11y_forecast, forecastDesc));
 
         // Read user preference for metric or imperial temperature units
-        boolean isMetric = Utility.isMetric(context);
+        boolean isMetric = Utility.isMetric(mContext);
 
         // Read high temperature from cursor
-        double high = cursor.getDouble(ForecastFragment.COL_WEATHER_MAX_TEMP);
-        String highStr = Utility.formatTemperature(context, high, isMetric);
-        viewHolder.highTempView.setText(highStr);
-        viewHolder.highTempView
-                .setContentDescription(context.getString(R.string.a11y_high_temp, highStr));
+        double high = mCursor.getDouble(ForecastFragment.COL_WEATHER_MAX_TEMP);
+        String highStr = Utility.formatTemperature(mContext, high, isMetric);
+        forecastAdapterViewHolder.mHighTempView.setText(highStr);
+        forecastAdapterViewHolder.mHighTempView
+                .setContentDescription(mContext.getString(R.string.a11y_high_temp, highStr));
 
         // Read low temperature from cursor
-        double low = cursor.getDouble(ForecastFragment.COL_WEATHER_MIN_TEMP);
-        String lowStr = Utility.formatTemperature(context, low, isMetric);
-        viewHolder.lowTempView.setText(lowStr);
-        viewHolder.lowTempView
-                .setContentDescription(context.getString(R.string.a11y_low_temp, lowStr));
+        double low = mCursor.getDouble(ForecastFragment.COL_WEATHER_MIN_TEMP);
+        String lowStr = Utility.formatTemperature(mContext, low, isMetric);
+        forecastAdapterViewHolder.mLowTempView.setText(lowStr);
+        forecastAdapterViewHolder.mLowTempView
+                .setContentDescription(mContext.getString(R.string.a11y_low_temp, lowStr));
+
+        mICM.onBindViewHolder(forecastAdapterViewHolder, position);
+    }
+
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        mICM.onRestoreInstanceState(savedInstanceState);
+    }
+
+
+    public void onSaveInstanceState(Bundle outState) {
+        mICM.onSaveInstanceState(outState);
+    }
+
+    public int getSelectedItemPosition() {
+        return mICM.getSelectedItemPosition();
+    }
+
+    public void selectView(RecyclerView.ViewHolder viewHolder) {
+        if ( viewHolder instanceof ForecastAdapterViewHolder ) {
+            ForecastAdapterViewHolder vfh = (ForecastAdapterViewHolder)viewHolder;
+            vfh.onClick(vfh.itemView);
+        }
     }
 
     /**
      * Cache of the children views for a forecast list item.
      */
-    public static class ViewHolder {
-        public final ImageView iconView;
-        public final TextView dateView;
-        public final TextView descriptionView;
-        public final TextView highTempView;
-        public final TextView lowTempView;
+    public class ForecastAdapterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        public final ImageView mIconView;
+        public final TextView mDateView;
+        public final TextView mDescriptionView;
+        public final TextView mHighTempView;
+        public final TextView mLowTempView;
 
-        public ViewHolder(View view) {
-            iconView = (ImageView) view.findViewById(R.id.list_item_icon);
-            dateView = (TextView) view.findViewById(R.id.list_item_date_textview);
-            descriptionView = (TextView) view.findViewById(R.id.list_item_forecast_textview);
-            highTempView = (TextView) view.findViewById(R.id.list_item_high_textview);
-            lowTempView = (TextView) view.findViewById(R.id.list_item_low_textview);
+
+        public ForecastAdapterViewHolder(View view) {
+            super(view);
+            mIconView = (ImageView) view.findViewById(R.id.list_item_icon);
+            mDateView = (TextView) view.findViewById(R.id.list_item_date_textview);
+            mDescriptionView = (TextView) view.findViewById(R.id.list_item_forecast_textview);
+            mHighTempView = (TextView) view.findViewById(R.id.list_item_high_textview);
+            mLowTempView = (TextView) view.findViewById(R.id.list_item_low_textview);
+            view.setOnClickListener(this);
         }
+
+        @Override
+        public void onClick(View view) {
+            int adapterPosition = getAdapterPosition();
+            mCursor.moveToPosition(adapterPosition);
+            int dateColumnIndex = mCursor.getColumnIndex(WeatherContract.WeatherEntry.COLUMN_DATE);
+            mClickHandler.onClick(mCursor.getLong(dateColumnIndex), this);
+            mICM.onClick(this);
+        }
+    }
+
+    public static interface ForecastAdapterOnClickHandler {
+        void onClick(Long date, ForecastAdapterViewHolder vh);
     }
 }

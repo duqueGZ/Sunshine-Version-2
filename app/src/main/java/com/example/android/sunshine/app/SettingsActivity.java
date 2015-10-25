@@ -25,7 +25,6 @@ import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 import com.example.android.sunshine.app.components.LocationEditTextPreference;
 import com.example.android.sunshine.app.data.WeatherContract;
@@ -56,7 +55,7 @@ public class SettingsActivity extends PreferenceActivity
         // updated when the preference changes.
         Preference locationPref = findPreference(getString(R.string.pref_location_key));
         int minLength = ((LocationEditTextPreference) locationPref).getMinLength();
-        Log.d(LOG_TAG, "LOCATION CUSTOM PREFERENCE MIN LENGHT IS: " + minLength);
+
         bindPreferenceSummaryToValue(locationPref);
         bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_units_key)));
         bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_art_pack_key)));
