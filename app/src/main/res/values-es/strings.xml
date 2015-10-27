@@ -39,4 +39,11 @@
     <string name="tomorrow">Mañana</string>
 
     <string name="month_day_format">dd MMMM"</string>
+
+    <!-- Strings related to Widgets -->
+    <string name="title_widget_today">Sunshine Hoy</string>
+    <string name="title_widget_detail">Sunshine Detalles</string>
+
+    <!-- Strings related to Muzei Source -->
+    <string name="muzei_description">Tiempo de hoy</string>
 </resources>

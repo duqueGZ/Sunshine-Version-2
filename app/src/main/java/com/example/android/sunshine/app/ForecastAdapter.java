@@ -110,13 +110,17 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
         // Choose the layout type
         int viewType = getItemViewType(position);
         int iconResourceId = -1;
+        boolean useLongToday;
+
         //Determine iconResourceId from viewType
         switch (viewType) {
             case VIEW_TYPE_TODAY:
                 iconResourceId = Utility.getArtResourceForWeatherCondition(weatherId);
+                useLongToday = true;
                 break;
-            case VIEW_TYPE_FUTURE_DAY:
+            default:
                 iconResourceId = Utility.getIconResourceForWeatherCondition(weatherId);
+                useLongToday = false;
                 break;
         }
 
@@ -136,7 +140,8 @@ public class ForecastAdapter extends RecyclerView.Adapter<ForecastAdapter.Foreca
 
         // Read date from cursor
         long dateInMilliseconds = mCursor.getLong(ForecastFragment.COL_WEATHER_DATE);
-        forecastAdapterViewHolder.mDateView.setText(Utility.getFriendlyDayString(mContext, dateInMilliseconds));
+        forecastAdapterViewHolder.mDateView.setText(Utility.getFriendlyDayString(mContext,
+                dateInMilliseconds, useLongToday));
 
         // Read weather forecast from cursor
         String forecastDesc = mCursor.getString(ForecastFragment.COL_WEATHER_DESC);
