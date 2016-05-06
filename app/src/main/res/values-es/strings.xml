@@ -46,4 +46,10 @@
 
     <!-- Strings related to Muzei Source -->
     <string name="muzei_description">Tiempo de hoy</string>
+
+    <string name="pref_current_location_desc">Usar mi ubicación</string>
+    <string name="place_picker_not_valid_address">
+        No se ha escogido una ubicación válida en el \'picker\'. La preferencia de ubicación no será
+        modificada.
+    </string>
 </resources>
