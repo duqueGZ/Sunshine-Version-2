@@ -9,7 +9,7 @@
     <string name="app_name">Sunshine</string>
 
     <!-- API string -->
-    <string name="owm_api_key" translatable="false">***REMOVED***</string>
+    <string name="owm_api_key" translatable="false">PLACE_YOUR_OPEN_WEATHER_MAP_API_KEY_HERE/string>
 
     <!--
          By convention, "action" denotes that this String will be used as the label for an Action,
